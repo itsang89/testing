@@ -11,20 +11,20 @@ export interface Patient {
   id: string;
   firstName: string;
   lastName: string;
-  dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
-  phone: string;
-  email: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    zipCode: string;
+  dateOfBirth?: string;
+  gender?: 'male' | 'female' | 'other';
+  phone?: string;
+  email?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
   };
-  emergencyContact: {
-    name: string;
-    relationship: string;
-    phone: string;
+  emergencyContact?: {
+    name?: string;
+    relationship?: string;
+    phone?: string;
   };
   medicalInfo: {
     bloodType?: string;

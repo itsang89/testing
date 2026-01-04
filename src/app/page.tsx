@@ -19,9 +19,12 @@ import {
 import { cn } from '@/lib/utils';
 
 function PatientCard({ patient }: { patient: Patient }) {
-  const getAge = (dateOfBirth: string) => {
+  const getAge = (dateOfBirth?: string) => {
+    if (!dateOfBirth) return 'N/A';
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
+    if (isNaN(birthDate.getTime())) return 'N/A';
+    
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
 
@@ -56,11 +59,11 @@ function PatientCard({ patient }: { patient: Patient }) {
       <div className="space-y-3 mb-6">
         <div className="flex items-center gap-2.5 text-[13px] text-gray-600">
           <Phone className="h-3.5 w-3.5 text-gray-400" />
-          <span>{patient.phone}</span>
+          <span>{patient.phone || 'N/A'}</span>
         </div>
         <div className="flex items-center gap-2.5 text-[13px] text-gray-600">
           <Mail className="h-3.5 w-3.5 text-gray-400" />
-          <span className="truncate">{patient.email}</span>
+          <span className="truncate">{patient.email || 'N/A'}</span>
         </div>
         <div className="grid grid-cols-2 gap-2 mt-4">
           <div className="bg-slate-50 rounded-lg p-2.5 border border-slate-100">
@@ -96,15 +99,13 @@ function PatientCard({ patient }: { patient: Patient }) {
 export default function Dashboard() {
   const { patients, searchPatients } = usePatients();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredPatients, setFilteredPatients] = useState(patients);
+
+  const filteredPatients = searchQuery.trim() 
+    ? searchPatients(searchQuery) 
+    : patients;
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.trim()) {
-      setFilteredPatients(searchPatients(query));
-    } else {
-      setFilteredPatients(patients);
-    }
   };
 
   return (

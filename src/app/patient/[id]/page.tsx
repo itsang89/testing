@@ -137,9 +137,12 @@ export default function PatientDetail() {
     );
   }
 
-  const getAge = (dateOfBirth: string) => {
+  const getAge = (dateOfBirth?: string) => {
+    if (!dateOfBirth) return 'N/A';
     const today = new Date();
     const birthDate = new Date(dateOfBirth);
+    if (isNaN(birthDate.getTime())) return 'N/A';
+    
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
@@ -160,14 +163,24 @@ export default function PatientDetail() {
           Back to list
         </button>
         <div className="flex items-center gap-3">
+          <Link
+            href={`/patient/${patient.id}/edit`}
+            className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all"
+          >
+            <FileText className="h-4 w-4" />
+            Edit Profile
+          </Link>
           <button className="flex items-center gap-2 bg-white border border-slate-200 text-slate-600 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition-all">
             <ExternalLink className="h-4 w-4" />
             Export Data
           </button>
-          <button className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-sm shadow-blue-100">
+          <Link
+            href={`/patient/${patient.id}/record/add`}
+            className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition-all shadow-sm shadow-blue-100"
+          >
             <Plus className="h-4 w-4" />
             New Record
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -195,15 +208,19 @@ export default function PatientDetail() {
             <div className="flex flex-wrap gap-4 pt-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
                 <Phone className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-bold text-slate-700">{patient.phone}</span>
+                <span className="text-sm font-bold text-slate-700">{patient.phone || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
                 <Mail className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-bold text-slate-700">{patient.email}</span>
+                <span className="text-sm font-bold text-slate-700">{patient.email || 'N/A'}</span>
               </div>
               <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
                 <MapPin className="h-4 w-4 text-slate-400" />
-                <span className="text-sm font-bold text-slate-700">{patient.address.city}, {patient.address.state}</span>
+                <span className="text-sm font-bold text-slate-700">
+                  {patient.address?.city && patient.address?.state 
+                    ? `${patient.address.city}, ${patient.address.state}` 
+                    : (patient.address?.city || patient.address?.state || 'N/A')}
+                </span>
               </div>
             </div>
           </div>
@@ -284,13 +301,15 @@ export default function PatientDetail() {
             </div>
             <div className="space-y-4">
               <div>
-                <p className="text-2xl font-black">{patient.emergencyContact.name}</p>
-                <p className="text-slate-400 font-bold text-sm uppercase tracking-wider mt-1">{patient.emergencyContact.relationship}</p>
+                <p className="text-2xl font-black">{patient.emergencyContact?.name || 'No Contact'}</p>
+                <p className="text-slate-400 font-bold text-sm uppercase tracking-wider mt-1">{patient.emergencyContact?.relationship || 'N/A'}</p>
               </div>
-              <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-2xl font-bold transition-all border border-white/10">
-                <Phone className="h-4 w-4" />
-                {patient.emergencyContact.phone}
-              </button>
+              {patient.emergencyContact?.phone && (
+                <button className="w-full flex items-center justify-center gap-2 py-3 bg-white/10 hover:bg-white/20 rounded-2xl font-bold transition-all border border-white/10">
+                  <Phone className="h-4 w-4" />
+                  {patient.emergencyContact.phone}
+                </button>
+              )}
             </div>
           </div>
         </div>

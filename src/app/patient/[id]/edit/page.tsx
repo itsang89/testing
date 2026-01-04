@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { usePatients } from '@/services/patientService';
 import { Patient } from '@/types/patient';
@@ -15,40 +15,12 @@ import {
   Plus,
   X,
   Save,
-  Trash2
+  Trash2,
+  UserRoundPen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-type FormData = Omit<Patient, 'id' | 'createdAt' | 'updatedAt'>;
-
-const initialFormData: FormData = {
-  firstName: '',
-  lastName: '',
-  dateOfBirth: '',
-  gender: 'male',
-  phone: '',
-  email: '',
-  address: {
-    street: '',
-    city: '',
-    state: '',
-    zipCode: ''
-  },
-  emergencyContact: {
-    name: '',
-    relationship: '',
-    phone: ''
-  },
-  medicalInfo: {
-    bloodType: '',
-    allergies: [],
-    currentMedications: [],
-    chronicConditions: [],
-    insuranceProvider: '',
-    insuranceId: ''
-  },
-  medicalHistory: []
-};
+type FormData = Omit<Patient, 'id' | 'createdAt' | 'updatedAt' | 'medicalHistory'>;
 
 function FormField({
   label,
@@ -199,15 +171,31 @@ function ArrayField({
   );
 }
 
-export default function AddPatient() {
+export default function EditPatient() {
   const router = useRouter();
-  const { addPatient } = usePatients();
-  const [formData, setFormData] = useState<FormData>(initialFormData);
+  const params = useParams();
+  const { getPatientById, updatePatient } = usePatients();
+  
+  const [formData, setFormData] = useState<FormData | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateFormData = (field: string, value: any) => {
+  useEffect(() => {
+    if (params.id && !formData) {
+      const patient = getPatientById(params.id as string);
+      if (patient) {
+        // Exclude fields not in FormData
+        const { id, createdAt, updatedAt, medicalHistory, ...rest } = patient;
+        setFormData(rest as FormData);
+      } else {
+        router.push('/');
+      }
+    }
+  }, [params.id, getPatientById, router, formData]);
+
+  const updateField = (field: string, value: any) => {
     setFormData(prev => {
+      if (!prev) return null;
       const keys = field.split('.');
       const updated = { ...prev };
       let current: any = updated;
@@ -222,12 +210,13 @@ export default function AddPatient() {
   };
 
   const validateForm = (): boolean => {
+    if (!formData) return false;
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim()) newErrors.firstName = 'Required';
     if (!formData.lastName.trim()) newErrors.lastName = 'Required';
     
     // Email format validation (only if provided)
-    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
+    if (formData.email?.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
     
@@ -237,11 +226,11 @@ export default function AddPatient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    if (!formData || !validateForm()) return;
     setIsSubmitting(true);
     try {
-      const newPatient = addPatient(formData);
-      router.push(`/patient/${newPatient.id}`);
+      updatePatient(params.id as string, formData);
+      router.push(`/patient/${params.id}`);
     } catch (error) {
       console.error(error);
     } finally {
@@ -249,23 +238,31 @@ export default function AddPatient() {
     }
   };
 
+  if (!formData) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
         <div className="space-y-1">
           <Link
-            href="/"
+            href={`/patient/${params.id}`}
             className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold text-sm mb-4 transition-colors"
           >
             <ChevronLeft className="h-4 w-4" />
-            Back to Dashboard
+            Back to Profile
           </Link>
           <div className="flex items-center gap-3">
             <div className="p-3 bg-blue-600 rounded-[20px] shadow-lg shadow-blue-100">
-              <UserPlus className="h-6 w-6 text-white" />
+              <UserRoundPen className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Add New Patient</h1>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Edit Patient</h1>
           </div>
         </div>
       </div>
@@ -282,16 +279,16 @@ export default function AddPatient() {
           </div>
           <div className="md:col-span-8 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              <FormField label="First Name" value={formData.firstName} onChange={v => updateFormData('firstName', v)} required error={errors.firstName} />
-              <FormField label="Last Name" value={formData.lastName} onChange={v => updateFormData('lastName', v)} required error={errors.lastName} />
+              <FormField label="First Name" value={formData.firstName} onChange={v => updateField('firstName', v)} required error={errors.firstName} />
+              <FormField label="Last Name" value={formData.lastName} onChange={v => updateField('lastName', v)} required error={errors.lastName} />
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <FormField label="Date of Birth" type="date" value={formData.dateOfBirth || ''} onChange={v => updateFormData('dateOfBirth', v)} error={errors.dateOfBirth} />
-              <SelectField label="Gender" value={formData.gender || ''} onChange={v => updateFormData('gender', v)} options={[{v:'male',l:'Male'},{v:'female',l:'Female'},{v:'other',l:'Other'}].map(o=>({value:o.v,label:o.l}))} />
+              <FormField label="Date of Birth" type="date" value={formData.dateOfBirth || ''} onChange={v => updateField('dateOfBirth', v)} error={errors.dateOfBirth} />
+              <SelectField label="Gender" value={formData.gender || ''} onChange={v => updateField('gender', v)} options={[{v:'male',l:'Male'},{v:'female',l:'Female'},{v:'other',l:'Other'}].map(o=>({value:o.v,label:o.l}))} />
             </div>
             <div className="grid grid-cols-2 gap-6">
-              <FormField label="Phone" value={formData.phone || ''} onChange={v => updateFormData('phone', v)} placeholder="(555) 000-0000" error={errors.phone} />
-              <FormField label="Email" type="email" value={formData.email || ''} onChange={v => updateFormData('email', v)} placeholder="name@example.com" error={errors.email} />
+              <FormField label="Phone" value={formData.phone || ''} onChange={v => updateField('phone', v)} placeholder="(555) 000-0000" error={errors.phone} />
+              <FormField label="Email" type="email" value={formData.email || ''} onChange={v => updateField('email', v)} placeholder="name@example.com" error={errors.email} />
             </div>
           </div>
         </div>
@@ -305,11 +302,11 @@ export default function AddPatient() {
             <p className="text-slate-400 text-sm font-medium">Residential address for billing and correspondence.</p>
           </div>
           <div className="md:col-span-8 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
-            <FormField label="Street Address" value={formData.address?.street || ''} onChange={v => updateFormData('address.street', v)} error={errors['address.street']} />
+            <FormField label="Street Address" value={formData.address?.street || ''} onChange={v => updateField('address.street', v)} error={errors['address.street']} />
             <div className="grid grid-cols-3 gap-4">
-              <FormField label="City" value={formData.address?.city || ''} onChange={v => updateFormData('address.city', v)} error={errors['address.city']} />
-              <FormField label="State" value={formData.address?.state || ''} onChange={v => updateFormData('address.state', v)} placeholder="NY" error={errors['address.state']} />
-              <FormField label="ZIP" value={formData.address?.zipCode || ''} onChange={v => updateFormData('address.zipCode', v)} placeholder="10001" error={errors['address.zipCode']} />
+              <FormField label="City" value={formData.address?.city || ''} onChange={v => updateField('address.city', v)} error={errors['address.city']} />
+              <FormField label="State" value={formData.address?.state || ''} onChange={v => updateField('address.state', v)} placeholder="NY" error={errors['address.state']} />
+              <FormField label="ZIP" value={formData.address?.zipCode || ''} onChange={v => updateField('address.zipCode', v)} placeholder="10001" error={errors['address.zipCode']} />
             </div>
           </div>
         </div>
@@ -324,10 +321,10 @@ export default function AddPatient() {
           </div>
           <div className="md:col-span-8 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-6">
             <div className="grid grid-cols-2 gap-6">
-              <FormField label="Contact Name" value={formData.emergencyContact?.name || ''} onChange={v => updateFormData('emergencyContact.name', v)} error={errors['emergencyContact.name']} />
-              <FormField label="Relationship" value={formData.emergencyContact?.relationship || ''} onChange={v => updateFormData('emergencyContact.relationship', v)} placeholder="Parent, Spouse..." error={errors['emergencyContact.relationship']} />
+              <FormField label="Contact Name" value={formData.emergencyContact?.name || ''} onChange={v => updateField('emergencyContact.name', v)} error={errors['emergencyContact.name']} />
+              <FormField label="Relationship" value={formData.emergencyContact?.relationship || ''} onChange={v => updateField('emergencyContact.relationship', v)} placeholder="Parent, Spouse..." error={errors['emergencyContact.relationship']} />
             </div>
-            <FormField label="Emergency Phone" value={formData.emergencyContact?.phone || ''} onChange={v => updateFormData('emergencyContact.phone', v)} error={errors['emergencyContact.phone']} />
+            <FormField label="Emergency Phone" value={formData.emergencyContact?.phone || ''} onChange={v => updateField('emergencyContact.phone', v)} error={errors['emergencyContact.phone']} />
           </div>
         </div>
 
@@ -341,23 +338,23 @@ export default function AddPatient() {
           </div>
           <div className="md:col-span-8 bg-white p-8 rounded-[32px] border border-slate-100 shadow-sm space-y-8">
             <div className="grid grid-cols-2 gap-6">
-              <SelectField label="Blood Type" value={formData.medicalInfo.bloodType || ''} onChange={v => updateFormData('medicalInfo.bloodType', v)} options={['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(t=>({value:t,label:t}))} />
-              <FormField label="Insurance" value={formData.medicalInfo.insuranceProvider || ''} onChange={v => updateFormData('medicalInfo.insuranceProvider', v)} placeholder="Provider Name" />
+              <SelectField label="Blood Type" value={formData.medicalInfo.bloodType || ''} onChange={v => updateField('medicalInfo.bloodType', v)} options={['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(t=>({value:t,label:t}))} />
+              <FormField label="Insurance" value={formData.medicalInfo.insuranceProvider || ''} onChange={v => updateField('medicalInfo.insuranceProvider', v)} placeholder="Provider Name" />
             </div>
             
-            <ArrayField label="Allergies" values={formData.medicalInfo.allergies} onChange={v => updateFormData('medicalInfo.allergies', v)} placeholder="e.g. Penicillin" />
-            <ArrayField label="Current Medications" values={formData.medicalInfo.currentMedications} onChange={v => updateFormData('medicalInfo.currentMedications', v)} placeholder="e.g. Advil 200mg" />
-            <ArrayField label="Chronic Conditions" values={formData.medicalInfo.chronicConditions} onChange={v => updateFormData('medicalInfo.chronicConditions', v)} placeholder="e.g. Asthma" />
+            <ArrayField label="Allergies" values={formData.medicalInfo.allergies} onChange={v => updateField('medicalInfo.allergies', v)} placeholder="e.g. Penicillin" />
+            <ArrayField label="Current Medications" values={formData.medicalInfo.currentMedications} onChange={v => updateField('medicalInfo.currentMedications', v)} placeholder="e.g. Advil 200mg" />
+            <ArrayField label="Chronic Conditions" values={formData.medicalInfo.chronicConditions} onChange={v => updateField('medicalInfo.chronicConditions', v)} placeholder="e.g. Asthma" />
           </div>
         </div>
 
         {/* Form Actions */}
         <div className="flex items-center justify-end gap-4 pt-10 border-t border-slate-200">
           <Link
-            href="/"
+            href={`/patient/${params.id}`}
             className="flex items-center gap-2 px-8 py-3 text-slate-500 font-bold hover:text-slate-700 transition-all"
           >
-            Discard Changes
+            Cancel
           </Link>
           <button
             type="submit"
@@ -365,10 +362,11 @@ export default function AddPatient() {
             className="flex items-center gap-2 px-10 py-4 bg-blue-600 text-white rounded-[20px] font-black shadow-xl shadow-blue-100 hover:bg-blue-700 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
           >
             <Save className="h-5 w-5" />
-            {isSubmitting ? 'Processing...' : 'Save Patient Profile'}
+            {isSubmitting ? 'Updating...' : 'Update Patient Profile'}
           </button>
         </div>
       </form>
     </div>
   );
 }
+
