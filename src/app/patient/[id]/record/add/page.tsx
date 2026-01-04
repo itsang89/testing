@@ -11,8 +11,6 @@ import {
   Calendar,
   Stethoscope,
   Save,
-  FileText,
-  User,
   Activity
 } from 'lucide-react';
 import { cn } from '@/lib/utils';

@@ -14,8 +14,7 @@ import {
   Stethoscope,
   Plus,
   X,
-  Save,
-  Trash2
+  Save
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

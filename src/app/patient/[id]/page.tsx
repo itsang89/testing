@@ -18,11 +18,10 @@ import {
   ExternalLink,
   Plus,
   ArrowLeft,
-  Search,
-  FileText,
-  FlaskConical,
-  ClipboardList,
-  Microscope,
+  Search, 
+  FileText, 
+  FlaskConical, 
+  ClipboardList, 
   Stethoscope
 } from 'lucide-react';
 

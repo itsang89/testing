@@ -7,7 +7,6 @@ import { usePatients } from '@/services/patientService';
 import { Patient } from '@/types/patient';
 import { 
   ChevronLeft, 
-  UserPlus, 
   Info, 
   MapPin, 
   ShieldAlert, 
@@ -15,7 +14,6 @@ import {
   Plus,
   X,
   Save,
-  Trash2,
   UserRoundPen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
