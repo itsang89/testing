@@ -226,7 +226,7 @@ export default function AddPatient() {
     if (!formData.lastName.trim()) newErrors.lastName = 'Required';
     
     // Email format validation (only if provided)
-    if (formData.email.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
+    if (formData.email?.trim() && !/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
     

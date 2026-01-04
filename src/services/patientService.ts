@@ -43,7 +43,7 @@ export function usePatients() {
     return patients.filter(patient =>
       patient.firstName.toLowerCase().includes(lowerQuery) ||
       patient.lastName.toLowerCase().includes(lowerQuery) ||
-      patient.email.toLowerCase().includes(lowerQuery) ||
+      (patient.email && patient.email.toLowerCase().includes(lowerQuery)) ||
       patient.phone?.includes(query) ||
       patient.dateOfBirth?.includes(query)
     );
